@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5EFE4">
+<title>Ancla · Cuéntame un ejemplo</title>
+<style>
+  :root{
+    --crema:#F5EFE4; --crema2:#EDE4D3; --papel:#FBF8F1;
+    --tinta:#2E2A2B; --tinta2:#5E5758; --tinta3:#8C8485;
+    --salvia:#7A9E8C; --salvia2:#5E8272; --salviaClaro:#DCE7E0;
+    --terracota:#C85A54; --ocre:#C99A3B; --ciruela:#5C3A4F;
+    --linea:rgba(46,42,43,.12);
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --r:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--crema); color:var(--tinta); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  button{font:inherit; cursor:pointer; border:0; background:none; color:inherit}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--ocre); outline-offset:3px; border-radius:6px}
+
+  /* ---------- marea (firma) ---------- */
+  #marea{position:fixed; left:0; right:0; bottom:0; height:38vh; pointer-events:none; z-index:0;
+    transform:translateY(60%); transition:transform 4s cubic-bezier(.4,0,.2,1)}
+  #marea svg{width:100%; height:100%; display:block}
+  #marea.subir{transform:translateY(20%)}
+  #marea.oculta{transform:translateY(110%)}
+  @media (prefers-reduced-motion:reduce){ #marea{transition:none} }
+
+  /* ---------- pantalla ---------- */
+  .app{position:relative; z-index:1; max-width:640px; margin:0 auto; padding:24px 20px 48px; min-height:100%}
+  .pantalla{display:none; animation:aparecer .45s ease both}
+  .pantalla.activa{display:block}
+  @keyframes aparecer{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){ .pantalla{animation:none} }
+
+  .cabecera{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:28px}
+  .marca{font-family:var(--serif); font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--ciruela)}
+  .marca span{color:var(--salvia2)}
+  .btn-texto{color:var(--tinta2); font-size:14px; padding:6px 10px; border-radius:8px}
+  .btn-texto:hover{background:var(--crema2)}
+
+  h1{font-family:var(--serif); font-weight:400; font-size:clamp(28px,6vw,36px); line-height:1.15; margin:0 0 8px; color:var(--tinta)}
+  h1 em{font-style:italic; color:var(--ciruela)}
+  .sub{color:var(--tinta2); margin:0 0 24px; font-size:16px}
+
+  /* situaciones */
+  .situaciones{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .situacion{
+    text-align:left; background:var(--papel); border:1px solid var(--linea); border-radius:var(--r);
+    padding:16px 16px 14px; min-height:104px; display:flex; flex-direction:column; justify-content:space-between;
+    transition:transform .15s ease, box-shadow .15s ease; box-shadow:0 1px 0 rgba(46,42,43,.04);
+  }
+  .situacion:hover{transform:translateY(-2px); box-shadow:0 6px 18px rgba(46,42,43,.08)}
+  .situacion::before{content:""; display:block; width:28px; height:4px; border-radius:4px; background:var(--tono); margin-bottom:10px}
+  .situacion b{font-family:var(--serif); font-weight:400; font-size:19px; line-height:1.2; display:block}
+  .situacion small{color:var(--tinta3); font-size:13px; line-height:1.3; display:block; margin-top:4px}
+
+  .fila-secundaria{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap}
+  .btn-suave{flex:1; min-width:140px; background:transparent; border:1px dashed rgba(46,42,43,.28); color:var(--tinta2);
+    border-radius:14px; padding:12px 14px; font-size:14px}
+  .btn-suave:hover{background:var(--papel)}
+
+  /* respirar */
+  .respira{min-height:70vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center}
+  .circulo{width:150px; height:150px; border-radius:50%; background:radial-gradient(circle at 40% 35%, #A9C6B8, var(--salvia2));
+    box-shadow:0 0 0 18px rgba(122,158,140,.18), 0 20px 50px rgba(46,42,43,.12);
+    transform:scale(.72); transition:transform 4s cubic-bezier(.4,0,.2,1); margin:24px 0 32px}
+  .circulo.dentro{transform:scale(1.12); transition-duration:4s}
+  .circulo.fuera{transform:scale(.72); transition-duration:6s}
+  @media (prefers-reduced-motion:reduce){ .circulo{transition:none} }
+  .instruccion{font-family:var(--serif); font-size:26px; color:var(--tinta); min-height:1.3em}
+  .contador{color:var(--tinta3); font-size:14px; letter-spacing:.1em; text-transform:uppercase; margin-top:8px}
+
+  /* cuento */
+  .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--salvia2); margin-bottom:10px}
+  .hoja{background:var(--papel); border-radius:var(--r); padding:28px 24px 24px; border:1px solid var(--linea);
+    box-shadow:0 10px 30px rgba(46,42,43,.06)}
+  .hoja h2{font-family:var(--serif); font-weight:400; font-style:italic; font-size:clamp(26px,6vw,34px); line-height:1.15; margin:0 0 18px; color:var(--ciruela)}
+  .cuerpo{font-family:var(--serif); font-size:18.5px; line-height:1.62; color:var(--tinta)}
+  .cuerpo p{margin:0 0 1em}
+  .cuerpo p:first-child::first-letter{font-size:2.6em; line-height:.85; float:left; padding:6px 8px 0 0; color:var(--terracota); font-style:italic}
+  .fuente{font-size:12px; color:var(--tinta3); margin-top:-6px}
+  .pensar{margin-top:22px; padding:16px 18px; border-left:3px solid var(--ocre); background:var(--crema2); border-radius:0 12px 12px 0}
+  .pensar .eyebrow{color:var(--ocre); margin-bottom:6px}
+  .pensar p{margin:0; font-size:16px; color:var(--tinta)}
+
+  .acciones{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap}
+  .btn{background:var(--tinta); color:var(--crema); border-radius:14px; padding:14px 18px; font-size:15px; font-weight:500; flex:1; min-width:150px; text-align:center}
+  .btn.salvia{background:var(--salvia2)}
+  .btn.terracota{background:var(--terracota)}
+  .btn.claro{background:var(--papel); color:var(--tinta); border:1px solid var(--linea)}
+  .btn:hover{filter:brightness(1.06)}
+  .btn-icono{width:50px; min-width:50px; flex:0; background:var(--papel); border:1px solid var(--linea); border-radius:14px; font-size:20px; display:flex; align-items:center; justify-content:center; color:var(--tinta3)}
+  .btn-icono.on{color:var(--terracota); border-color:var(--terracota)}
+
+  /* ancla */
+  .sentidos{display:flex; flex-direction:column; gap:10px; margin:18px 0}
+  .sentido{display:flex; align-items:center; gap:14px; background:var(--papel); border:1px solid var(--linea); border-radius:14px; padding:12px 14px; width:100%; text-align:left}
+  .sentido .num{font-family:var(--serif); font-size:30px; width:36px; text-align:center; color:var(--terracota); font-style:italic; transition:color .2s}
+  .sentido.listo .num{color:var(--salvia2)}
+  .sentido .txt{flex:1}
+  .sentido .txt b{display:block; font-weight:500; font-size:15px}
+  .sentido .txt small{color:var(--tinta3); font-size:13px}
+  .sentido .puntos{display:flex; gap:5px}
+  .sentido .puntos i{width:9px; height:9px; border-radius:50%; background:var(--crema2); border:1px solid rgba(46,42,43,.15)}
+  .sentido .puntos i.on{background:var(--salvia); border-color:var(--salvia)}
+  label.campo{display:block; margin-top:22px}
+  label.campo span{display:block; font-size:14px; color:var(--tinta2); margin-bottom:8px}
+  textarea{width:100%; min-height:88px; border:1px solid var(--linea); border-radius:14px; background:var(--papel); padding:14px; font-family:var(--serif); font-size:17px; color:var(--tinta); resize:vertical}
+  textarea::placeholder{color:var(--tinta3); font-style:italic}
+
+  /* cierre */
+  .cierre{text-align:center; padding:40px 8px 20px}
+  .cierre .hora{font-family:var(--serif); font-size:clamp(34px,9vw,52px); color:var(--ciruela); font-style:italic; line-height:1.1}
+  .cierre .fecha{color:var(--tinta2); margin:6px 0 22px}
+  .cierto{background:var(--papel); border-radius:var(--r); padding:18px 20px; font-family:var(--serif); font-size:19px; text-align:left; border:1px solid var(--linea); margin:0 auto 24px}
+  .cierto small{display:block; font-family:var(--sans); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--salvia2); margin-bottom:6px}
+
+  /* favoritos / lista */
+  .lista{display:flex; flex-direction:column; gap:8px}
+  .item{background:var(--papel); border:1px solid var(--linea); border-radius:14px; padding:14px 16px; text-align:left; width:100%}
+  .item b{font-family:var(--serif); font-weight:400; font-style:italic; font-size:19px; display:block; color:var(--ciruela)}
+  .item small{color:var(--tinta3); font-size:13px}
+  .vacio{color:var(--tinta3); font-style:italic; padding:20px 0}
+
+  .pie{margin-top:40px; padding-top:16px; border-top:1px solid var(--linea); font-size:13px; color:var(--tinta3); line-height:1.5}
+  .pie b{color:var(--tinta2); font-weight:500}
+  .pie a{color:var(--terracota); text-decoration:none; font-weight:500}
+</style>
+</head>
+<body>
+
+<div id="marea" aria-hidden="true">
+  <svg viewBox="0 0 640 300" preserveAspectRatio="none">
+    <path d="M0,60 C120,20 220,100 340,60 C460,20 560,90 640,50 L640,300 L0,300 Z" fill="#DCE7E0" opacity=".9"/>
+    <path d="M0,110 C140,70 240,150 380,110 C500,75 580,140 640,105 L640,300 L0,300 Z" fill="#C3D6CB" opacity=".85"/>
+    <path d="M0,170 C130,140 250,200 380,170 C500,145 570,195 640,165 L640,300 L0,300 Z" fill="#A9C6B8" opacity=".8"/>
+  </svg>
+</div>
+
+<div class="app">
+
+  <!-- INICIO -->
+  <section class="pantalla activa" id="p-inicio">
+    <div class="cabecera">
+      <div class="marca">Ancla <span>·</span> Cuéntame un ejemplo</div>
+      <button class="btn-texto" onclick="ir('p-favoritos')">Guardados</button>
+    </div>
+    <h1>¿Qué está pasando <em>ahora mismo</em>?</h1>
+    <p class="sub">Elige lo que más se parezca. Habrá un cuento para eso y después un paso para volver a lo que sí es cierto.</p>
+    <div class="situaciones" id="situaciones"></div>
+    <div class="fila-secundaria">
+      <button class="btn-suave" onclick="respirarSolo()">Solo necesito respirar</button>
+      <button class="btn-suave" onclick="cuentoAlAzar()">Dame cualquier cuento</button>
+    </div>
+    <div class="pie">
+      Estos cuentos no sustituyen a tu terapeuta. Si sientes que estás en peligro o piensas en hacerte daño, llama ahora a la <b>Línea de la Vida: <a href="tel:8009112000">800 911 2000</a></b> (México, 24 h) o acude a urgencias.
+    </div>
+  </section>
+
+  <!-- RESPIRAR -->
+  <section class="pantalla" id="p-respirar">
+    <div class="cabecera">
+      <div class="marca">Ancla</div>
+      <button class="btn-texto" onclick="saltarRespiracion()">Saltar</button>
+    </div>
+    <div class="respira">
+      <div class="eyebrow" id="resp-eyebrow">Antes del cuento</div>
+      <div class="circulo" id="circulo"></div>
+      <div class="instruccion" id="instruccion">Inhala</div>
+      <div class="contador" id="contador">respiración 1 de 3</div>
+    </div>
+  </section>
+
+  <!-- CUENTO -->
+  <section class="pantalla" id="p-cuento">
+    <div class="cabecera">
+      <button class="btn-texto" onclick="ir('p-inicio')">← Inicio</button>
+      <button class="btn-texto" onclick="otroCuento()">Otro cuento</button>
+    </div>
+    <div class="eyebrow" id="cuento-eyebrow"></div>
+    <article class="hoja">
+      <h2 id="cuento-titulo"></h2>
+      <div class="cuerpo" id="cuento-cuerpo"></div>
+      <div class="fuente" id="cuento-fuente"></div>
+      <div class="pensar">
+        <div class="eyebrow">Para pensar</div>
+        <p id="cuento-pregunta"></p>
+      </div>
+    </article>
+    <div class="acciones">
+      <button class="btn salvia" onclick="ir('p-ancla'); iniciarAncla()">Anclarme ahora</button>
+      <button class="btn-icono" id="btn-fav" onclick="toggleFav()" aria-label="Guardar cuento">♡</button>
+    </div>
+  </section>
+
+  <!-- ANCLA -->
+  <section class="pantalla" id="p-ancla">
+    <div class="cabecera">
+      <button class="btn-texto" onclick="ir('p-cuento')">← Cuento</button>
+      <div class="marca">Ancla</div>
+    </div>
+    <h1>Vuelve a <em>este lugar</em></h1>
+    <p class="sub">Toca cada renglón por cada cosa que encuentres. No hace falta que sea bonito; solo que sea real.</p>
+    <div class="sentidos" id="sentidos"></div>
+    <label class="campo">
+      <span>Una cosa que es cierta ahora mismo (un hecho, no un miedo)</span>
+      <textarea id="cierto-input" placeholder="Por ejemplo: estoy sentado en mi cama, es de noche y respiro."></textarea>
+    </label>
+    <div class="acciones">
+      <button class="btn" onclick="cerrar()">Listo</button>
+    </div>
+  </section>
+
+  <!-- CIERRE -->
+  <section class="pantalla" id="p-cierre">
+    <div class="cierre">
+      <div class="eyebrow">Estás aquí</div>
+      <div class="hora" id="cierre-hora"></div>
+      <div class="fecha" id="cierre-fecha"></div>
+      <div class="cierto" id="cierre-cierto" style="display:none"><small>Lo que sí es cierto</small><span id="cierre-texto"></span></div>
+      <p class="sub" style="text-align:center">La ola que sentías ya pasó por lo más alto. Puedes volver cuando la sientas subir otra vez.</p>
+      <div class="acciones" style="justify-content:center">
+        <button class="btn claro" onclick="ir('p-cuento')">Releer el cuento</button>
+        <button class="btn" onclick="ir('p-inicio')">Volver al inicio</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAVORITOS -->
+  <section class="pantalla" id="p-favoritos">
+    <div class="cabecera">
+      <button class="btn-texto" onclick="ir('p-inicio')">← Inicio</button>
+      <div class="marca">Guardados</div>
+    </div>
+    <h1>Los cuentos que <em>te sirvieron</em></h1>
+    <p class="sub">Tenerlos a la mano ahorra tiempo cuando la mente va rápido.</p>
+    <div class="lista" id="lista-fav"></div>
+  </section>
+
+</div>
+
+<script>
+/* ============================================================
+   CONTENIDO
+   Relatos y parábolas de la compilación "Cuéntame un ejemplo"
+   (H. Zanuso), reescritos y adaptados para uso terapéutico.
+   ============================================================ */
+const SITUACIONES = [
+  {id:"desesperanza", nombre:"No puedo más",        detalle:"todo se siente perdido",        tono:"#5C3A4F"},
+  {id:"preocupacion", nombre:"Miedo a lo que viene", detalle:"la mente se fue al futuro",     tono:"#7A9E8C"},
+  {id:"ansiedad",     nombre:"Todo me abruma",       detalle:"el cuerpo está acelerado",      tono:"#C99A3B"},
+  {id:"enojo",        nombre:"Enojo o resentimiento",detalle:"alguien me hirió",              tono:"#C85A54"},
+  {id:"soledad",      nombre:"Sola, solo",           detalle:"siento que no valgo",           tono:"#5E8272"},
+  {id:"culpa",        nombre:"Culpa",                detalle:"me arrepiento de algo",         tono:"#8C6A3B"},
+  {id:"duelo",        nombre:"Una pérdida",          detalle:"alguien o algo ya no está",     tono:"#6B4E62"},
+  {id:"carencia",     nombre:"Me falta todo",        detalle:"comparo y salgo perdiendo",     tono:"#A87A2E"},
+];
+
+const CUENTOS = [
+{
+  id:"vaso", titulo:"El peso del vaso", cats:["preocupacion","ansiedad"], fuente:"Anónimo",
+  texto:[
+    "Un conferencista levantó un vaso con agua frente al público y preguntó cuánto creían que pesaba. Las respuestas fueron de todo tipo: cien gramos, doscientos, medio kilo.",
+    "—El peso exacto no importa —dijo—. Lo que importa es cuánto tiempo lo sostengo. Si lo sostengo un minuto, nada pasa. Si lo sostengo una hora, me dolerá el brazo. Si lo sostengo todo el día, alguien tendrá que llamar a una ambulancia. El vaso pesa lo mismo en los tres casos; lo que cambia es el tiempo que llevo cargándolo.",
+    "Con las preocupaciones ocurre igual. Una preocupación cargada un rato es soportable. La misma preocupación, sostenida sin soltar durante días, termina por doblar a cualquiera. No es que el problema haya crecido: es que el brazo ya no puede más.",
+    "Bajar el vaso un momento no significa que el agua desaparezca. Significa que el brazo descansa, y que cuando vuelvas a levantarlo tendrás fuerza para hacerlo."
+  ],
+  pregunta:"¿Qué vaso llevas sosteniendo desde hace horas? ¿Podrías bajarlo a la mesa solo mientras lees esto?"
+},
+{
+  id:"naufrago", titulo:"La cabaña en llamas", cats:["desesperanza","preocupacion"], fuente:"Anónimo",
+  texto:[
+    "Un hombre sobrevivió a un naufragio y llegó a una isla vacía. Cada día miraba el horizonte y pedía que alguien viniera por él. Nadie venía.",
+    "Con el tiempo, cansado de esperar, construyó una pequeña cabaña con lo que el mar arrojaba a la playa. Ahí guardaba sus pocas cosas: era lo único que había logrado en meses.",
+    "Una tarde regresó de buscar comida y encontró la cabaña ardiendo. Una columna de humo negro subía al cielo. Lo perdió todo. Se dejó caer en la arena, furioso, preguntando por qué le pasaba también esto, y se quedó dormido.",
+    "Al amanecer lo despertó la sirena de un barco que se acercaba a la isla. Cuando por fin estuvo a bordo preguntó cómo lo habían encontrado. —Vimos tu señal de humo —le dijeron."
+  ],
+  pregunta:"Lo que hoy parece el final de todo, ¿podría verse distinto mañana? No tienes que creerlo todavía; basta con dejar la pregunta abierta."
+},
+{
+  id:"bordado", titulo:"El bordado visto desde abajo", cats:["desesperanza","preocupacion","duelo"], fuente:"Anónimo",
+  texto:[
+    "Cuando era niño me sentaba a los pies de mi madre mientras ella bordaba. Desde donde yo estaba solo veía el revés de la tela: hilos sueltos, nudos, colores oscuros cruzándose sin orden. Le preguntaba por qué hacía algo tan feo.",
+    "Ella sonreía y me decía: —Ve a jugar. Cuando termine te subo a mis piernas y lo ves desde arriba.",
+    "Yo volvía a preguntarle por qué usaba tantos hilos negros y grises, y por qué todo se veía tan enredado. Ella seguía bordando.",
+    "Más tarde me llamaba, me sentaba en su regazo y me mostraba la tela por el derecho: una flor, un atardecer, un paisaje completo. Los hilos oscuros que tanto me molestaban eran justo los que daban sombra y profundidad a la imagen. Desde abajo era un enredo; desde arriba había un diseño.",
+    "Muchas veces desde entonces he vuelto a sentirme sentado en el piso, mirando solo el revés."
+  ],
+  pregunta:"Es posible que ahora mismo estés viendo el revés de la tela. ¿Qué hilo oscuro de tu historia terminó, con el tiempo, dando forma a algo que hoy valoras?"
+},
+{
+  id:"cancion", titulo:"La canción del hermano", cats:["desesperanza","duelo"], fuente:"Anónimo",
+  texto:[
+    "Michael tenía tres años cuando supo que iba a tener una hermanita. Durante todo el embarazo le cantaba al vientre de su madre la misma canción, una y otra vez.",
+    "El parto se complicó. La bebé nació en muy mal estado y la llevaron a cuidados intensivos. Los días pasaban y empeoraba. Los médicos pidieron a los padres que se prepararan para lo peor; ellos, con el corazón roto, empezaron a hacer arreglos para un funeral.",
+    "Michael insistía: quería cantarle a su hermana. Le explicaban que los niños no podían entrar. Él seguía pidiéndolo.",
+    "Una tarde su madre decidió que entraría de todos modos. Lo vistió con una bata enorme y lo metió. Una enfermera se indignó y ordenó que lo sacaran; la madre, con una firmeza que nadie le conocía, respondió que el niño no se iría sin cantar. Y lo acercó a la incubadora.",
+    "Michael miró a su hermana y empezó a cantar con su voz de niño de tres años. Mientras cantaba, el pulso de la bebé se fue regularizando. Su respiración se suavizó. La enfermera, ahora llorando, le pedía que siguiera. Al día siguiente la niña estaba lista para irse a casa.",
+    "Nadie supo explicarlo del todo. La madre lo llamó un milagro; el niño solo sabía que tenía que cantar."
+  ],
+  pregunta:"Cuando todo indicaba que no había nada que hacer, alguien hizo lo único que sabía hacer. ¿Cuál es tu canción, la cosa pequeña que todavía puedes hacer hoy?"
+},
+{
+  id:"leche", titulo:"Un vaso de leche", cats:["desesperanza","soledad"], fuente:"Anónimo",
+  texto:[
+    "Un joven pagaba sus estudios vendiendo de puerta en puerta. Una tarde tenía hambre y no tenía ni una moneda. Decidió que en la siguiente casa pediría algo de comer, aunque le diera vergüenza.",
+    "Le abrió una muchacha. Se le fue el valor y solo pidió un vaso de agua. Ella lo miró, adivinó el hambre, y volvió con un vaso grande de leche. Él lo bebió despacio y preguntó cuánto le debía. —Nada —dijo ella—. En mi casa no se cobra por un favor.",
+    "El joven salió de esa casa con el estómago lleno y algo más: esa misma semana había estado pensando en abandonarlo todo. Decidió seguir.",
+    "Muchos años después, la muchacha, ya mayor, enfermó de gravedad. La enviaron a un hospital de la ciudad donde trabajaba un especialista famoso. Cuando el médico leyó el nombre y el pueblo de la paciente, se levantó y fue a verla. La reconoció de inmediato y peleó por su vida durante semanas, hasta que la salvó.",
+    "Ella recibió la cuenta del hospital con terror, segura de que pasaría el resto de su vida pagándola. Al pie de la larga lista de cifras había una nota escrita a mano: «Pagado por completo con un vaso de leche. Dr. Howard Kelly»."
+  ],
+  pregunta:"Aquel joven estaba a punto de rendirse y no lo sabía nadie. Algo pequeño lo sostuvo. ¿Qué gesto pequeño, recibido o dado, te ha sostenido a ti alguna vez?"
+},
+{
+  id:"semillas", titulo:"La tienda de los regalos", cats:["desesperanza","carencia"], fuente:"Anónimo",
+  texto:[
+    "Soñé que en la plaza del pueblo habían abierto una tienda nueva. El letrero decía: Regalos de Dios. Entré. Atendía un ángel.",
+    "—¿Qué vendes? —le pregunté. —Cualquier don que necesites. —¿Y cuánto cobras? —Nada. Aquí todo es gratis.",
+    "Miré los estantes: frascos de fe, paquetes de esperanza, ánforas de amor, cajas de paz. Yo necesitaba todo eso con urgencia. Me armé de valor y pedí una buena cantidad de cada cosa.",
+    "El ángel fue al fondo y regresó con un solo paquete, pequeño, del tamaño de mi puño. —¿Esto es todo? —pregunté, decepcionado.",
+    "—Es todo —dijo—. Aquí nunca se dan frutos maduros. Solo semillas. Sembrarlas es cosa tuya."
+  ],
+  pregunta:"Hoy no tienes que cosechar nada. ¿Qué semilla mínima podrías sembrar en las próximas horas: una llamada, un vaso de agua, salir a la puerta?"
+},
+{
+  id:"cruz", titulo:"La cruz elegida", cats:["desesperanza","carencia"], fuente:"Anónimo",
+  texto:[
+    "Un joven sentía que ya no podía con su vida. Se arrodilló y dijo: —Señor, mi cruz pesa demasiado. No puedo seguir.",
+    "Y escuchó una respuesta: —Está bien. Déjala en esa habitación y escoge la que quieras.",
+    "El joven entró aliviado. La habitación estaba llena de cruces de todos los tamaños: enormes, torcidas, de hierro, de piedra. Recorrió el lugar despacio, comparando, hasta que vio una pequeña, apoyada junto a la puerta.",
+    "—Quiero esa —dijo.",
+    "—Hijo —le respondieron—, esa es la que acabas de dejar."
+  ],
+  pregunta:"Cuando comparas tu carga con la de otros, ¿la ves completa o solo la parte que ellos muestran? ¿Qué parte de tu propia carga ya sabes cargar sin darte cuenta?"
+},
+{
+  id:"bici", titulo:"La bicicleta de dos", cats:["preocupacion","ansiedad"], fuente:"Anónimo",
+  texto:[
+    "Al principio pensaba en Dios como alguien que me vigilaba desde lejos, anotando mis errores. Lo reconocía como se reconoce la foto de un presidente: sabía quién era, pero no lo conocía.",
+    "Después empecé a imaginar la vida como un viaje en bicicleta. Una bicicleta de dos asientos. Al principio yo iba adelante y él atrás, ayudándome a pedalear. Yo elegía el camino: la distancia más corta entre dos puntos. Aburrido, pero predecible.",
+    "No sé cuándo cambiamos de lugar. Solo sé que desde entonces él va adelante y conoce caminos que yo nunca hubiera tomado: subidas, curvas cerradas, paisajes que me quitaban el aliento. Yo preguntaba a gritos «¿a dónde vamos?», y él solo sonreía. Cuando decía «tengo miedo», se inclinaba hacia atrás y me tocaba la mano.",
+    "Poco a poco aprendí a soltar el manubrio y a mirar el paisaje. Y cuando estoy seguro de que ya no puedo pedalear más, me dice una sola palabra: —Pedalea."
+  ],
+  pregunta:"¿Cuánta de tu energía se va en querer ver el mapa completo antes de dar la siguiente pedalada? ¿Qué pasaría si solo pedaleas los próximos diez metros?"
+},
+{
+  id:"loco", titulo:"El loco de la carretera", cats:["desesperanza","enojo"], fuente:"Relato de un hecho real",
+  texto:[
+    "Una noche de huracán, cerca de Biloxi, un hombre se plantó en medio de la carretera bajo la lluvia. Se había quitado la camisa y la agitaba frente a los autos como bandera.",
+    "Los conductores pensaron que estaba loco. Algunos lo esquivaron y siguieron de largo. Otros frenaron furiosos y lo amenazaron con llamar a la policía si no se quitaba.",
+    "Solo entonces pudo hablarles: —El puente que está más adelante ya no existe. Se lo llevó el agua. Si no los detenía de algún modo, ustedes iban a caer como los que pasaron antes.",
+    "Los que se habían enojado con él entendieron que el loco les acababa de salvar la vida."
+  ],
+  pregunta:"¿Ha habido en tu vida obstáculos que en el momento te enfurecieron y que, mirados después, resultaron ser una protección? ¿Podría el obstáculo de hoy ser uno de ellos?"
+},
+{
+  id:"camion", titulo:"El camión de basura", cats:["enojo","ansiedad"], fuente:"Anónimo",
+  texto:[
+    "Iba en un taxi rumbo al trabajo, platicando con el chofer, cuando un coche se nos cruzó de golpe. El taxista frenó y giró el volante; por centímetros no chocamos.",
+    "El otro conductor, el que había cometido la imprudencia, se bajó furioso y empezó a gritarle insultos al taxista. Él sonrió, levantó la mano, le deseó buen día y siguió manejando.",
+    "—¿Por qué le respondió así? —le pregunté—. Ese hombre casi nos manda al hospital y encima lo insultó.",
+    "—Muchas personas son como camiones de basura —me dijo—. Van cargados de enojo, frustración y resentimiento, y cuando ya no les cabe más, buscan dónde descargarlo. Si se lo dejas caer encima y lo cargas tú, te llevas su basura a tu casa. Yo prefiero saludarlos y seguir mi camino.",
+    "Desde ese día trato de no permitir que un camión de basura decida cómo va a ser mi tarde. Puedo ser amable con quien va cargado; lo que no puedo es convertirme en su basurero."
+  ],
+  pregunta:"Lo que te dijeron o hicieron, ¿de quién es la basura? ¿Qué parte de ella sigues cargando cuando ya se fueron?"
+},
+{
+  id:"arena", titulo:"Escrito en la arena", cats:["enojo","culpa"], fuente:"Leyenda árabe",
+  texto:[
+    "Dos amigos cruzaban el desierto. En algún punto discutieron y uno le dio una bofetada al otro. El ofendido no dijo nada; se agachó y escribió con el dedo en la arena: «Hoy mi mejor amigo me golpeó».",
+    "Siguieron caminando hasta llegar a un oasis y decidieron bañarse. El que había recibido la bofetada empezó a ahogarse; el otro se lanzó al agua y lo sacó. Cuando se recuperó, tomó una piedra afilada y grabó en una roca: «Hoy mi mejor amigo me salvó la vida».",
+    "—No entiendo —dijo su amigo—. Cuando te lastimé escribiste en la arena, y ahora escribes en la roca.",
+    "—Cuando alguien que queremos nos hiere, conviene escribirlo en la arena, donde el viento se lo va llevando. Cuando alguien nos hace un bien, hay que grabarlo en piedra, donde ningún viento pueda borrarlo."
+  ],
+  pregunta:"¿Qué llevas grabado en piedra que debería estar en la arena? ¿Y qué hay en la arena que merece la roca?"
+},
+{
+  id:"papel", titulo:"El papel arrugado", cats:["enojo","culpa"], fuente:"Anónimo",
+  texto:[
+    "De joven tenía un carácter explosivo. Estallaba por cualquier cosa y después, avergonzado, iba a pedir disculpas y a consolar a quien había lastimado.",
+    "Un día mi maestro me vio disculpándome con un compañero después de una de mis explosiones. Me llevó a un salón vacío, me dio una hoja de papel lisa y me dijo: —Arrúgala.",
+    "La hice bolita. —Ahora déjala como estaba.",
+    "Lo intenté. La estiré, la planché con la mano, la puse bajo un libro. Quedó llena de pliegues.",
+    "—El corazón de las personas es como esa hoja —me dijo—. Lo que dejas en ellas cuando estallas no se borra con una disculpa. Se alisa, pero las marcas quedan.",
+    "Desde entonces, cuando siento que voy a estallar, me acuerdo de esa hoja. No para castigarme, sino para darme tres segundos antes de arrugar algo que no podré desarrugar."
+  ],
+  pregunta:"Entre lo que sientes ahora y lo que vas a hacer con eso hay un espacio. ¿Cuánto mide hoy? ¿Qué podrías hacer para que mida tres segundos más?"
+},
+{
+  id:"espejos", titulo:"La casa de los mil espejos", cats:["ansiedad","soledad","enojo"], fuente:"Cuento popular",
+  texto:[
+    "En un pueblo había una casa grande y vieja. Un día, un perrito que huía del sol entró por una puerta abierta y llegó a un cuarto donde había mil perritos mirándolo.",
+    "Movió la cola; los mil movieron la cola. Levantó las orejas y ladró contento; los mil le ladraron contentos. Salió pensando: «Qué lugar tan agradable. Volveré seguido».",
+    "Tiempo después entró otro perro callejero al mismo cuarto. Al ver a los mil perros sintió que lo miraban con hostilidad. Gruñó; los mil gruñeron. Ladró con rabia; los mil le ladraron con rabia. Salió corriendo y pensó: «Qué lugar tan horrible. Nunca volveré».",
+    "En la fachada de la casa había un letrero que ninguno de los dos leyó: La casa de los mil espejos."
+  ],
+  pregunta:"Cuando entras a un lugar convencido de que todos están en tu contra, ¿qué cara llevas puesta? No tienes que fingir alegría; basta con notar qué estás mostrando."
+},
+{
+  id:"sonrisa", titulo:"Lo que cuesta una sonrisa", cats:["ansiedad","soledad"], fuente:"Atribuido a Federico Faber",
+  texto:[
+    "Hay una cosa que no cuesta nada y rinde mucho. Enriquece a quien la recibe sin empobrecer a quien la da. Dura un instante, y su recuerdo puede durar años.",
+    "Nadie es tan rico que pueda vivir sin ella, ni tan pobre que no pueda regalarla. En una casa da tranquilidad; en el trabajo, confianza; entre amigos es la contraseña.",
+    "Descansa a los cansados, anima a los que se rindieron, consuela a los tristes. No se puede comprar, ni pedir prestada, ni robar: solo sirve cuando se regala.",
+    "Y si alguien no te da la suya, dale tú la tuya. Nadie necesita tanto una sonrisa como quien ya no tiene ninguna para dar."
+  ],
+  pregunta:"No se trata de sonreír para tapar lo que sientes. Se trata de esto: ¿hay alguien cerca, hoy, a quien podrías regalarle una? A veces la cara del otro es la primera ancla."
+},
+{
+  id:"lista", titulo:"La lista en la cartera", cats:["soledad"], fuente:"Anónimo",
+  texto:[
+    "Una maestra pidió a sus alumnos que escribieran el nombre de cada compañero y, junto a cada nombre, lo mejor que pudieran decir de esa persona. El fin de semana pasó las respuestas en limpio: una hoja por alumno con todo lo bueno que los demás habían dicho de él.",
+    "El lunes repartió las hojas. El salón entero se quedó callado y después empezó a sonreír. «No sabía que le importaba a alguien», escuchó decir en voz baja.",
+    "Años más tarde uno de esos alumnos, Marcos, murió en la guerra. La maestra fue al funeral. Al final, los padres se acercaron y le mostraron un papel doblado y gastado que habían encontrado en la ropa de su hijo: era la hoja de la lista. La había llevado consigo todos esos años.",
+    "Entonces sus antiguos compañeros empezaron a hablar. Uno guardaba la suya en su cartera. Otra la había pegado en su álbum de bodas. Otro la tenía en su diario. Una más la sacó de su bolsa, arrugada, y dijo: «Yo la llevo conmigo siempre».",
+    "La maestra se sentó y lloró. Nunca imaginó que unas cuantas palabras buenas pudieran sostener a tanta gente durante tanto tiempo."
+  ],
+  pregunta:"Si tus compañeros, tu familia o tus amigos hicieran hoy tu lista, ¿qué crees que escribirían? Anota una sola cosa que sepas que alguien diría de ti."
+},
+{
+  id:"zapatos", titulo:"¿Es usted la esposa de Dios?", cats:["soledad","carencia"], fuente:"Anónimo",
+  texto:[
+    "Un niño descalzo, temblando de frío, miraba la vitrina de una zapatería. Una mujer que pasaba se detuvo y le preguntó qué veía con tanta atención.",
+    "—Le estaba pidiendo a Dios un par de zapatos —dijo el niño.",
+    "La mujer lo tomó de la mano y entró con él a la tienda. Pidió calcetines, una palangana con agua y una toalla. Se quitó los guantes, le lavó los pies, se los secó, le puso unos calcetines nuevos y le compró zapatos. Le dio el resto de los calcetines, le acarició la cabeza y le dijo que ahora sí estaría cómodo.",
+    "Cuando se dio la vuelta para irse, el niño la alcanzó, la tomó de la mano y, con los ojos llenos de lágrimas, le preguntó: —¿Es usted la esposa de Dios?"
+  ],
+  pregunta:"Lo que necesitas hoy quizá no llegue como lo pediste, sino a través de una persona común. ¿A quién podrías permitirle acercarse?"
+},
+{
+  id:"payaso", titulo:"El payaso y el niño", cats:["soledad","desesperanza"], fuente:"Anónimo",
+  texto:[
+    "Había un payaso que hacía reír a los niños todos los días, pero él vivía triste. Al volver a su casa, su esposa apenas notaba si había llegado y sus hijos se burlaban de su oficio. Cada mañana volvía a pintarse la cara y a hacer reír a todos.",
+    "Todos, menos un niño pequeño que no se reía. Lo miraba con una ternura extraña, como si viera detrás del maquillaje.",
+    "Un día, agotado, el payaso se acostó en una banca del parque, sin disfraz, y se preguntó cómo iba a seguir haciendo reír si ya no le quedaban fuerzas. Se durmió.",
+    "Al despertar, el niño estaba ahí, mirándolo igual que siempre. —¿Cómo supiste que era yo, sin maquillaje? —le preguntó el payaso.",
+    "—Es que para mí nunca has sido un payaso —dijo el niño—. Eres mi hermano."
+  ],
+  pregunta:"¿Quién te ha visto sin maquillaje y se ha quedado? Aunque hoy no lo sientas, esa persona existe o existió. Nómbrala."
+},
+{
+  id:"circo", titulo:"El billete en el suelo", cats:["carencia","soledad"], fuente:"Anónimo",
+  texto:[
+    "Cuando era niña fui con mi papá a comprar boletos para el circo. Delante de nosotros en la fila había una familia: los padres y ocho hijos, todos con ropa muy sencilla. Los niños no dejaban de hablar de los elefantes y los payasos; era la primera vez que iban.",
+    "Cuando llegaron a la taquilla y el padre pidió las diez entradas, la empleada dijo el precio. El hombre y su esposa se quedaron mudos. No les alcanzaba. ¿Cómo iban a decirles a sus hijos que se regresaban a casa?",
+    "Mi papá, que tampoco tenía dinero de sobra, sacó un billete de veinte dólares y lo dejó caer al suelo. Luego se agachó, lo recogió, tocó al hombre en el hombro y le dijo: —Disculpe, señor, se le cayó esto.",
+    "El hombre entendió. Miró a mi padre a los ojos, le apretó la mano con las suyas y, con la voz quebrada, le dio las gracias.",
+    "Esa noche nosotros no fuimos al circo. Pero no volvimos a casa con las manos vacías."
+  ],
+  pregunta:"Aquel padre en la fila creía que no tenía nada. ¿Qué tienes tú ahora mismo, aunque sea muy poco, que alguien más recibiría como un regalo?"
+},
+{
+  id:"cicatrices", titulo:"Las cicatrices en los brazos", cats:["desesperanza","duelo"], fuente:"Anónimo",
+  texto:[
+    "Un niño salió a nadar a la laguna que había detrás de su casa. No vio al cocodrilo que se acercaba. Su madre lo vio desde la ventana, corrió gritando y él nadó hacia la orilla, pero el animal lo alcanzó primero.",
+    "Desde el muelle, la madre lo agarró de los brazos justo cuando el cocodrilo le atrapaba las piernas. Empezó un forcejeo terrible. El animal era más fuerte, pero ella no soltó. Un vecino que oyó los gritos llegó y mató al cocodrilo.",
+    "El niño sobrevivió. Semanas después, un periodista le preguntó si podía ver las cicatrices que le habían quedado en las piernas. El niño se las mostró. Luego se subió las mangas y le enseñó otras marcas, en los brazos: —Pero estas son las que debería ver. Son de las uñas de mi mamá. Las tengo porque no me soltó."
+  ],
+  pregunta:"Tienes cicatrices de lo que te hirió. ¿Tienes también marcas de quien no te soltó? A veces son las mismas."
+},
+{
+  id:"olimpiadas", titulo:"La carrera de los nueve", cats:["soledad","carencia"], fuente:"Relato de un hecho real",
+  texto:[
+    "En unas Olimpiadas Especiales, nueve corredores con distintas discapacidades se alinearon para los cien metros. Sonó el disparo y todos arrancaron con ganas de llegar primero.",
+    "Uno de ellos tropezó a los pocos metros, cayó, rodó y empezó a llorar.",
+    "Los otros ocho oyeron el llanto. Bajaron el paso, voltearon y, uno por uno, regresaron por él. Una niña con síndrome de Down se agachó, le dio un beso y le dijo: «Esto te va a hacer sentir mejor». Después los nueve se tomaron de los brazos y caminaron juntos hasta la meta.",
+    "El estadio entero se puso de pie. Los que estuvieron ahí ese día todavía lo cuentan."
+  ],
+  pregunta:"¿Con quién estás compitiendo ahora mismo en tu cabeza? ¿Qué pasaría si dejaras de correr y caminaras el resto con alguien?"
+},
+{
+  id:"tommy", titulo:"El estudiante que dejó de buscar", cats:["culpa","duelo","desesperanza"], fuente:"Anónimo",
+  texto:[
+    "Tommy era el ateo declarado de mi clase de teología. Se burlaba de la idea de un Dios que amara sin condiciones. Al final del curso, mientras entregaba su examen, me preguntó con ironía si yo creía que algún día encontraría a Dios. —No —le dije. Y cuando ya iba saliendo agregué: —Pero estoy seguro de que él te encontrará a ti.",
+    "Años después supe que Tommy tenía cáncer y que le quedaban semanas. Antes de que pudiera buscarlo, vino a mi oficina, sin pelo, delgado, pero con una voz más firme que nunca.",
+    "Me contó que al enfermar había empezado a buscar a Dios con desesperación, tocando todas las puertas, y que no había pasado nada. Hasta que un día se rindió. Decidió usar el tiempo que le quedaba en algo más útil: decirle a las personas que quería que las quería.",
+    "Empezó por el más difícil, su padre. Le dijo: «Papá, te quiero». El periódico cayó al suelo, y su padre hizo dos cosas que Tommy nunca le había visto hacer: llorar y abrazarlo. Hablaron toda la noche. Luego siguió con su madre, con su hermano, con sus amigos.",
+    "—Y un día, sin buscarlo, Dios estaba ahí —me dijo—. Usted tenía razón: no lo encontré yo. Me encontró él, cuando dejé de intentar poseerlo y me abrí a querer.",
+    "Tommy no alcanzó a venir a mi clase a contar esto. Me pidió que lo contara yo."
+  ],
+  pregunta:"¿A quién no le has dicho algo que sabes que deberías decirle? Tommy empezó por el más difícil. Tú puedes empezar por el más fácil."
+},
+{
+  id:"cobija", titulo:"La media cobija", cats:["culpa","enojo"], fuente:"Anónimo",
+  texto:[
+    "Don Roque enviudó ya viejo. Había trabajado toda su vida para que su hijo llegara a ser un profesionista respetado, y ahora, solo y cansado, decidió por primera vez pedirle un favor. Tocó a su puerta.",
+    "—Hijo, me siento muy solo. ¿Podría quedarme a vivir con ustedes?",
+    "El hijo dudó. La casa era chica, la esposa era especial, los niños tenían sus cuartos. —Si te causo molestias, olvídalo —dijo el padre. —No, no es eso... solo que no sé dónde podrías dormir. ¿No te molestaría... el patio?",
+    "—El patio está bien —dijo Don Roque.",
+    "El hijo llamó a su propio hijo, Luis, de doce años, y le pidió que le llevara una cobija a su abuelo. Cuando volvió a buscarlo, lo encontró cortando la cobija en dos con unas tijeras.",
+    "—¿Qué haces? ¿Por qué cortas la cobija de tu abuelo?",
+    "—Estaba pensando —dijo Luis— en guardar la otra mitad para cuando tú seas viejo y vengas a vivir a mi casa."
+  ],
+  pregunta:"Lo que hacemos enseña más que lo que decimos. ¿Qué mitad de cobija estás repartiendo hoy, y qué te gustaría que alguien aprendiera de verte?"
+},
+{
+  id:"peseta", titulo:"Los veinticinco centavos", cats:["culpa"], fuente:"Anónimo",
+  texto:[
+    "Un pastor recién llegado a la ciudad tomó el autobús para ir al centro. Al sentarse notó que el chofer le había dado veinticinco centavos de más en el cambio.",
+    "Pensó: «Es una moneda. Nadie la va a extrañar. La compañía gana de sobra. Tómalo como un regalo». Pero al llegar a su parada se detuvo, volvió con el chofer y le dijo: —Me dio de más.",
+    "El chofer sonrió. —Sé que usted es el nuevo pastor. Llevo tiempo pensando en volver a la iglesia, y quería ver qué hacía usted si le daba cambio de sobra.",
+    "El pastor bajó del autobús temblando. Por veinticinco centavos había estado a punto de venderlo todo."
+  ],
+  pregunta:"La culpa que sientes, ¿es por algo que hiciste o por algo que casi haces? Si todavía hay tiempo de devolver la moneda, ese es el camino más corto para que se calle."
+},
+{
+  id:"verdadero", titulo:"Cincuenta y cinco años", cats:["duelo"], fuente:"Anónimo",
+  texto:[
+    "Mis padres estuvieron casados cincuenta y cinco años. Una mañana mi madre bajaba la escalera para hacerle el desayuno a mi padre, sufrió un infarto y cayó. Él la levantó como pudo, la subió a la camioneta y manejó al hospital con el corazón hecho pedazos. Cuando llegó, ella ya había muerto.",
+    "En el velorio mi padre no habló. Esa noche, en casa, pidió de pronto que lo lleváramos al cementerio. Le dijimos que eran las once. —No discutan con el hombre que acaba de perder a su esposa de cincuenta y cinco años —dijo. Fuimos.",
+    "Frente a la lápida, con una linterna, la acarició y nos dijo: —Fueron cincuenta y cinco años buenos. Estuvimos juntos cuando nacieron ustedes, cuando me corrieron del trabajo, cuando enfermaron. Lloramos juntos, nos perdonamos, rezamos en las salas de espera de muchos hospitales.",
+    "Hizo una pausa. —Y ahora se fue, y estoy contento. ¿Saben por qué? Porque se fue antes que yo. Ella no tendrá que enterrarme ni quedarse sola después. Ese dolor me toca a mí. La quiero tanto que no hubiera querido que lo pasara ella.",
+    "Regresamos a casa. —Ha sido un buen día —dijo. Esa noche entendí lo que es el amor."
+  ],
+  pregunta:"El dolor que sientes por quien perdiste es del tamaño de lo que hubo entre ustedes. ¿Qué te gustaría que esa persona supiera que cargas por ella con gusto?"
+},
+{
+  id:"otra", titulo:"La cita con la otra mujer", cats:["duelo","culpa"], fuente:"Anónimo",
+  texto:[
+    "Después de veintiún años de matrimonio empecé a salir con otra mujer. La idea fue de mi esposa. —Sabes que la quieres —me dijo—. La vida es corta. Dedícale tiempo.",
+    "La otra mujer era mi madre. Viuda desde hacía diecinueve años, la visitaba poco: el trabajo, los hijos. Esa noche la llamé para invitarla a cenar. —¿Estás bien? ¿Pasó algo? —preguntó, porque a su edad una llamada inesperada suele ser mala noticia. —Solo quiero pasar un rato contigo —le dije.",
+    "El viernes la encontré esperándome en la puerta, con el pelo arreglado y el vestido de su último aniversario. Les había contado a sus amigas que iba a salir con su hijo. En el restaurante tuve que leerle el menú; ya casi no veía. —Cuando eras chico, era yo quien te leía el menú —dijo. —Entonces me toca devolverte el favor.",
+    "Hablamos tanto que se nos pasó la película. Al despedirnos me dijo que la próxima invitaba ella.",
+    "Unos días después murió de un infarto. Poco después me llegó un sobre: el recibo del mismo restaurante, ya pagado por adelantado, para dos personas, y una nota: «No estaba segura de poder estar ahí, pero pagué la cena para ti y para tu esposa. Nunca sabrás lo que esa noche significó para mí. Te amo»."
+  ],
+  pregunta:"No todo lo que quedó pendiente se puede reparar. Pero la persona que perdiste tuvo algo bueno de ti, aunque hoy solo veas lo que faltó. ¿Qué fue?"
+},
+{
+  id:"recuerda", titulo:"Cuenta lo que sí tienes", cats:["carencia"], fuente:"Anónimo",
+  texto:[
+    "Si esta mañana te levantaste de una cama, eso ya te distingue de muchas personas que no pudieron.",
+    "Si tienes comida en el refrigerador, ropa para ponerte y un techo, tienes más que la mayoría de las personas del mundo. Si hay algo de dinero en tu cartera o en un cajón, estás entre una minoría.",
+    "Si nunca has vivido una guerra, una cárcel ni el hambre de verdad, has sido protegido de cosas que hoy mismo están viviendo millones.",
+    "Y si puedes leer esto, tienes ojos que funcionan y un lugar donde nadie te lo impide.",
+    "Nada de esto borra lo que te falta. Pero es cierto, y está aquí, y a veces la mente solo cuenta lo que no está."
+  ],
+  pregunta:"La mente que compara siempre encuentra algo que falta. Haz por un momento la cuenta contraria: nombra tres cosas que tienes hoy y que hace cinco años no tenías."
+},
+{
+  id:"maravillas", titulo:"Las siete maravillas", cats:["carencia","ansiedad"], fuente:"Anónimo",
+  texto:[
+    "Un maestro pidió a sus alumnos una lista con las siete maravillas del mundo. Con algunas discusiones, la mayoría coincidió: las pirámides, el Taj Mahal, la Muralla China, el Canal de Panamá, el Empire State, la Basílica de San Pedro.",
+    "Buscando la séptima, notó que una alumna no había entregado su lista. Le preguntó si tenía problemas para decidirse. —Un poco —dijo ella—. Son demasiadas.",
+    "El maestro le pidió que leyera lo que llevaba. Ella dudó y leyó: —Poder ver. Poder oír. Poder hablar. Poder moverme. Poder pensar. Poder reír. Y la más importante: poder querer a alguien.",
+    "El salón se quedó en silencio."
+  ],
+  pregunta:"Pon una mano sobre tu pecho. Late. Respiras. Ves estas letras. ¿Cuántas de las siete maravillas de esa niña tienes funcionando ahora mismo?"
+},
+{
+  id:"monje", titulo:"El monje y el turista", cats:["carencia","preocupacion"], fuente:"Cuento popular",
+  texto:[
+    "Un turista se encontró con un monje sentado en silencio y le impresionó la paz que transmitía. Se acercó y le preguntó:",
+    "—¿Cómo es posible que usted, que ha renunciado a todo, esté tan en paz, como si lo tuviera todo? ¿De dónde saca esa capacidad de renunciar?",
+    "El monje sonrió. —Yo también me asombro de la capacidad de renuncia de la gente del mundo. Yo renuncio a cosas que se acaban a cambio de algo que no se acaba. Ustedes renuncian a lo que no se acaba a cambio de cosas que se acaban."
+  ],
+  pregunta:"Lo que te preocupa perder, ¿es de las cosas que se acaban o de las que no? ¿Y a cuál de las dos le estás dando el día de hoy?"
+},
+{
+  id:"latita", titulo:"La latita de leche", cats:["carencia"], fuente:"Anónimo",
+  texto:[
+    "Dos hermanitos con la ropa rota, uno de cinco años y otro de diez, iban pidiendo comida de casa en casa. En la mayoría los corrían. Por fin una señora les dio una latita de leche.",
+    "Se sentaron en la banqueta. El pequeño le dijo al grande: —Tú eres el mayor, toma primero. El mayor se llevó la lata a la boca, apretó los labios para que no le entrara ni una gota y se la pasó: —Ahora tú, pero solo un poquito.",
+    "Y así siguieron: ahora tú, ahora yo, ahora tú, ahora yo. El grande fingía beber; el chico bebía de verdad. Cuando la lata quedó vacía, el pequeño se la había tomado toda.",
+    "Entonces el mayor se levantó, pateó la lata como un balón y empezó a cantar y a correr detrás de ella, con el estómago vacío y una alegría que yo, que los miraba, no lograba entender. Hasta que entendí."
+  ],
+  pregunta:"El hermano mayor no tenía nada y sin embargo tenía algo que dar. ¿Qué te queda para dar hoy, aunque sientas que estás vacío?"
+},
+{
+  id:"patio", titulo:"Lo que trajo del patio", cats:["carencia","ansiedad"], fuente:"Anónimo",
+  texto:[
+    "Un niño le preguntó a su maestra qué era el amor. Ella pensó que la pregunta merecía más que una definición, así que mandó a todos al patio: que trajeran lo que más les despertara ese sentimiento.",
+    "Volvieron cargados. Uno trajo una flor. Otro, una mariposa para su colección. Otro, un pajarito que se había caído del nido. Fueron mostrando sus tesoros uno por uno.",
+    "Una niña había vuelto con las manos vacías y se quedó callada. La maestra le preguntó si no había encontrado nada.",
+    "—Vi la flor y olí su perfume, pero la dejé para que otros la disfrutaran. Vi la mariposa, tan contenta, y preferí dejarla volar. Vi el pajarito, pero su mamá revoloteaba cerca y los dejé juntos. Así que traigo el perfume, la libertad y el alivio de esa mamá. No sé cómo mostrarlos.",
+    "La maestra le dio la calificación más alta."
+  ],
+  pregunta:"Cuando sientes que vuelves con las manos vacías, ¿qué traes que no se puede mostrar? Nómbralo aunque nadie lo vea."
+},
+{
+  id:"hermano", titulo:"La sangre del hermano", cats:["carencia","soledad"], fuente:"Anónimo",
+  texto:[
+    "Una niña llamada Liz sufría una enfermedad rara. Su única posibilidad era una transfusión de su hermano de cinco años, que había sobrevivido a la misma enfermedad y tenía los anticuerpos.",
+    "El médico se lo explicó al niño y le preguntó si estaba dispuesto a darle su sangre. Dudó un instante, tomó aire y dijo: —Sí, si con eso Liz se salva.",
+    "Durante la transfusión, acostado junto a su hermana, sonreía al ver que le volvía el color a la cara. De pronto se puso pálido y, con la voz temblorosa, le preguntó al médico: —¿A qué hora me voy a empezar a morir?",
+    "Había entendido que tendría que darle toda su sangre. Y aun así había dicho que sí."
+  ],
+  pregunta:"Ese niño creyó que estaba dando lo último que tenía. ¿Hay algo que sigues dando aunque sientas que ya no te queda? Eso también cuenta como valor."
+},
+{
+  id:"dorotea", titulo:"El nombre de Dorotea", cats:["soledad"], fuente:"Anónimo",
+  texto:[
+    "En mi segundo mes de la escuela de enfermería, el profesor nos puso un examen sorpresa. Iba bien hasta la última pregunta: «¿Cómo se llama la señora que limpia la escuela?».",
+    "Pensé que era una broma. La había visto muchas veces: alta, de unos cincuenta años. Pero ¿su nombre? Dejé la pregunta en blanco.",
+    "Antes de terminar la clase alguien preguntó si esa pregunta contaba para la calificación. —Por supuesto —dijo el profesor—. En su carrera van a conocer a muchas personas. Todas importan. Todas merecen que las vean, aunque lo único que puedan hacer sea sonreír y decir hola.",
+    "Nunca lo olvidé. También aprendí que se llamaba Dorotea."
+  ],
+  pregunta:"Sentirse invisible duele. ¿A quién ves tú todos los días sin haberle preguntado el nombre? Preguntarlo te saca de tu cabeza y a esa persona de la suya."
+},
+{
+  id:"barbero", titulo:"Los barberos no existen", cats:["desesperanza"], fuente:"Anónimo",
+  texto:[
+    "Un barbero le decía a su cliente mientras lo peinaba: —Yo no creo que Dios exista. Basta salir a la calle para verlo: si existiera, no habría tantos enfermos, ni niños abandonados, ni tanto dolor.",
+    "El cliente prefirió no discutir. Pagó y salió. En la banqueta vio pasar a un hombre con la barba enorme y el pelo enmarañado, sucio, descuidado. Regresó a la barbería y dijo:",
+    "—¿Sabe qué? Los barberos no existen.",
+    "—¿Cómo que no? Aquí estoy yo.",
+    "—No existen. Si existieran, no habría gente así por la calle.",
+    "—Los barberos sí existimos —dijo el barbero—. Lo que pasa es que esa gente no viene conmigo.",
+    "—Exacto —dijo el cliente."
+  ],
+  pregunta:"La ayuda que no has recibido, ¿es porque no existe o porque todavía no has entrado a la barbería? ¿Qué puerta tienes cerca y no has tocado?"
+},
+];
+
+/* ============================================================
+   ESTADO Y ALMACENAMIENTO (con respaldo en memoria)
+   ============================================================ */
+const mem = {};
+const store = {
+  get(k){ try{ const v = localStorage.getItem(k); return v===null ? (mem[k] ?? null) : JSON.parse(v);}catch(e){ return mem[k] ?? null; } },
+  set(k,v){ mem[k]=v; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let estado = { situacion:null, cuento:null, vistos:[], respTimer:null };
+let favoritos = store.get("ancla.favoritos") || [];
+
+/* ============================================================
+   NAVEGACIÓN
+   ============================================================ */
+const $ = id => document.getElementById(id);
+function ir(id){
+  document.querySelectorAll(".pantalla").forEach(p=>p.classList.remove("activa"));
+  $(id).classList.add("activa");
+  window.scrollTo({top:0, behavior:"smooth"});
+  const marea = $("marea");
+  marea.classList.remove("subir");
+  marea.classList.toggle("oculta", id==="p-cuento" || id==="p-favoritos");
+  if(id==="p-favoritos") pintarFavoritos();
+  if(id!=="p-respirar" && estado.respTimer){ clearTimeout(estado.respTimer); estado.respTimer=null; }
+}
+
+/* situaciones */
+(function pintarSituaciones(){
+  const c = $("situaciones");
+  SITUACIONES.forEach(s=>{
+    const b = document.createElement("button");
+    b.className="situacion"; b.style.setProperty("--tono", s.tono);
+    b.innerHTML = `<b>${s.nombre}</b><small>${s.detalle}</small>`;
+    b.onclick = ()=> elegirSituacion(s.id);
+    c.appendChild(b);
+  });
+})();
+
+function elegirSituacion(id){
+  estado.situacion = id;
+  estado.cuento = escogerCuento(id);
+  respirar(()=>{ mostrarCuento(); ir("p-cuento"); }, "Antes del cuento");
+}
+function escogerCuento(sit){
+  let pool = CUENTOS.filter(c=>c.cats.includes(sit) && !estado.vistos.includes(c.id));
+  if(!pool.length){ estado.vistos = estado.vistos.filter(v=>!CUENTOS.find(c=>c.id===v && c.cats.includes(sit))); pool = CUENTOS.filter(c=>c.cats.includes(sit)); }
+  const c = pool[Math.floor(Math.random()*pool.length)];
+  estado.vistos.push(c.id);
+  return c;
+}
+function otroCuento(){
+  const sit = estado.situacion;
+  estado.cuento = sit ? escogerCuento(sit) : CUENTOS[Math.floor(Math.random()*CUENTOS.length)];
+  mostrarCuento(); window.scrollTo({top:0, behavior:"smooth"});
+}
+function cuentoAlAzar(){
+  estado.situacion = null;
+  estado.cuento = CUENTOS[Math.floor(Math.random()*CUENTOS.length)];
+  mostrarCuento(); ir("p-cuento");
+}
+
+/* ============================================================
+   RESPIRACIÓN
+   ============================================================ */
+let despues = null;
+function respirar(cb, titulo){
+  despues = cb;
+  $("resp-eyebrow").textContent = titulo || "Respira";
+  ir("p-respirar");
+  $("marea").classList.remove("oculta");
+  const circ = $("circulo"), ins = $("instruccion"), cont = $("contador"), marea = $("marea");
+  const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let ciclo = 1;
+  const paso = ()=>{
+    if(ciclo>3){ ins.textContent="Bien."; cont.textContent=""; estado.respTimer=setTimeout(()=>{ if(despues) despues(); }, 900); return; }
+    cont.textContent = `respiración ${ciclo} de 3`;
+    ins.textContent = "Inhala por la nariz";
+    circ.classList.remove("fuera"); circ.classList.add("dentro"); marea.classList.add("subir");
+    estado.respTimer = setTimeout(()=>{
+      ins.textContent = "Suelta el aire, despacio";
+      circ.classList.remove("dentro"); circ.classList.add("fuera"); marea.classList.remove("subir");
+      estado.respTimer = setTimeout(()=>{ ciclo++; paso(); }, reducido?2500:6000);
+    }, reducido?2000:4000);
+  };
+  paso();
+}
+function saltarRespiracion(){ if(estado.respTimer) clearTimeout(estado.respTimer); if(despues) despues(); }
+function respirarSolo(){
+  respirar(()=>{ ir("p-inicio"); }, "Solo respirar");
+}
+
+/* ============================================================
+   CUENTO
+   ============================================================ */
+function mostrarCuento(){
+  const c = estado.cuento;
+  const s = SITUACIONES.find(x=>x.id===estado.situacion);
+  $("cuento-eyebrow").textContent = s ? `Para cuando ${s.nombre.toLowerCase()}` : "Un cuento cualquiera";
+  $("cuento-titulo").textContent = c.titulo;
+  $("cuento-cuerpo").innerHTML = c.texto.map(p=>`<p>${p}</p>`).join("");
+  $("cuento-fuente").textContent = c.fuente;
+  $("cuento-pregunta").textContent = c.pregunta;
+  pintarFav();
+}
+function pintarFav(){
+  const on = favoritos.includes(estado.cuento.id);
+  const b = $("btn-fav"); b.textContent = on ? "♥" : "♡"; b.classList.toggle("on", on);
+}
+function toggleFav(){
+  const id = estado.cuento.id;
+  favoritos = favoritos.includes(id) ? favoritos.filter(f=>f!==id) : [...favoritos, id];
+  store.set("ancla.favoritos", favoritos); pintarFav();
+}
+function pintarFavoritos(){
+  const l = $("lista-fav"); l.innerHTML="";
+  if(!favoritos.length){ l.innerHTML = `<div class="vacio">Todavía no guardas ninguno. En cada cuento hay un corazón para hacerlo.</div>`; return; }
+  favoritos.forEach(id=>{
+    const c = CUENTOS.find(x=>x.id===id); if(!c) return;
+    const b = document.createElement("button"); b.className="item";
+    b.innerHTML = `<b>${c.titulo}</b><small>${c.cats.map(k=>SITUACIONES.find(s=>s.id===k).nombre).join(" · ")}</small>`;
+    b.onclick = ()=>{ estado.situacion = c.cats[0]; estado.cuento = c; mostrarCuento(); ir("p-cuento"); };
+    l.appendChild(b);
+  });
+}
+
+/* ============================================================
+   ANCLA 5-4-3-2-1
+   ============================================================ */
+const SENTIDOS = [
+  {n:5, t:"cosas que puedes ver", d:"colores, formas, luz"},
+  {n:4, t:"cosas que puedes tocar", d:"la silla, tu ropa, el suelo"},
+  {n:3, t:"sonidos que escuchas", d:"lejanos o cercanos"},
+  {n:2, t:"olores que notas", d:"o dos que te gusten"},
+  {n:1, t:"sabor en tu boca", d:"o un trago de agua"},
+];
+let conteo = [];
+function iniciarAncla(){
+  conteo = SENTIDOS.map(()=>0);
+  $("cierto-input").value = "";
+  const c = $("sentidos"); c.innerHTML="";
+  SENTIDOS.forEach((s,i)=>{
+    const b = document.createElement("button"); b.className="sentido"; b.setAttribute("aria-label", `${s.n} ${s.t}`);
+    b.innerHTML = `<div class="num">${s.n}</div><div class="txt"><b>${s.t}</b><small>${s.d}</small></div><div class="puntos">${"<i></i>".repeat(s.n)}</div>`;
+    b.onclick = ()=>{
+      if(conteo[i] < s.n) conteo[i]++;
+      const puntos = b.querySelectorAll(".puntos i");
+      puntos.forEach((p,k)=>p.classList.toggle("on", k<conteo[i]));
+      b.querySelector(".num").textContent = s.n - conteo[i] || "✓";
+      b.classList.toggle("listo", conteo[i]===s.n);
+      if(navigator.vibrate) navigator.vibrate(8);
+    };
+    c.appendChild(b);
+  });
+}
+function cerrar(){
+  const ahora = new Date();
+  $("cierre-hora").textContent = ahora.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+  const f = ahora.toLocaleDateString("es-MX",{weekday:"long", day:"numeric", month:"long"});
+  $("cierre-fecha").textContent = f.charAt(0).toUpperCase()+f.slice(1);
+  const txt = $("cierto-input").value.trim();
+  $("cierre-cierto").style.display = txt ? "block" : "none";
+  $("cierre-texto").textContent = txt;
+  const hist = store.get("ancla.historial") || [];
+  hist.push({fecha:ahora.toISOString(), situacion:estado.situacion, cuento:estado.cuento?.id, cierto:txt});
+  store.set("ancla.historial", hist.slice(-100));
+  ir("p-cierre");
+}
+</script>
+</body>
+</html>
